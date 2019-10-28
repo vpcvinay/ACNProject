@@ -9,8 +9,8 @@ s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 start = time.time()
 
 ip = "127.0.0.1"
-client_port = 1234
-server_port = 1235
+client_port = 1234 #own port
+server_port=6000 #server port
 conn_establ = False
 while True:
 	try:
@@ -22,8 +22,6 @@ while True:
 			if conn:
 				print("Connection established with client with port : {}".format(client_port))
 				conn_establ = True
-				#s.shutdown(1)
-				#s.close()
 				break
 		except:
 			print("Connection not established")
@@ -35,27 +33,16 @@ while True:
 		break
 	
 def send():
-	ip = "127.0.0.1"
-	port=6000
-	
 	s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	port_other = 1234
-	s.connect(('127.0.0.1', port_other))
+	s.connect(('127.0.0.1', server_port))
 
 	print( "(", ip, ")\n")
-
-
 	name = input(str("\nEnter your name: "))
-
-
 
 	print("\nTrying to connect to ", "(", port_other, ")\n")
 	time.sleep(1)
 
-
-
 	print("Connected...\n")
-
 
 	while 1:
 		message = input(str("Please enter your message: "))
