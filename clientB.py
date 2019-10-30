@@ -1,17 +1,17 @@
-import time, socket,threading,sys
+import time, socket,thread,sys
 
 
 print("\nWelcome to Chat Room\n")
 print("Initialising....\n")
 time.sleep(1)
 
+s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+start = time.time()
 server_port=[6000,6001] #server port
 
 def fog_node_connect(server_port):
-	ip = "0.0.0.0"
-	s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	start = time.time()
-	client_port = 1234 #own port
+	ip = "127.0.0.1"
+	client_port = 6001 #own port
 	conn_establ = False
 	s.bind((ip,client_port))
 	while True:
@@ -52,9 +52,4 @@ def fog_node_connect(server_port):
 			print("")
 
 
-
-thread1 = threading.Thread(target=fog_node_connect,args=(server_port[0],))
-thread1.start()
-thread2 = threading.Thread(target=fog_node_connect,args=(server_port[1],))
-thread2.start()
-
+thread.start_new_thread(fog_node_connect,(server_port[1]))
