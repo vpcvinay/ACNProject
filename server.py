@@ -1,30 +1,31 @@
 import time, socket,threading,sys
 '''connection between fog nodes is done ,connection between iot to one fog node is done'''
 
-UDP_IP="127.0.0.1"
-UDP_PORT=1234
-s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-s.bind((UDP_IP,UDP_PORT))
 
-
-data,addr=s.recvfrom(1024)
-print("received message")
-print(data.decode())
+#iot_socket=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+#iot_socket.bind(("",6000))
+#data,addr=iot_socket.recvfrom(1024)
+#print("received message")
+#print(data.decode())
 
 class fog_node:
-	def __init__(self):
+	def __init__(self,My_tcp,my_udp,C,Tcp0,N):
 		self.received_conn = []
+		self.iot_socket=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		self.no_of_conn = 0
-		self.server_port=[6000,6001] #server port
-		self.neighbors = len(self.server_port)
-	
+		self.N = N
+		self.neighbors = len(N)
+		self.My_tcp = My_tcp
+		self.My_udp = my_udp
+		self.cloud_ip = C
+		self.cloud_port = Tcp0		
+		self.My_ip = "127.0.0.1"
+		
 	def conn_establish(self):
-		ip = "127.0.0.1"
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		start = time.time()
-		client_port = 1234 #own port
 		count = 0
-		s.bind((ip,client_port))
+		s.bind(("",self.My_tcp))
 		while count<self.neighbors:
 			try:
 				s.settimeout(6)
@@ -43,16 +44,17 @@ class fog_node:
 				s.close()
 				continue
 		print("Number of connection established : {}".format(self.no_of_conn))
+		
 		while True:
-			if self.no_of_conn==self.neighbors:
-				print("connected to all neighbors")
+			if self.no_of_conn==self.neighbors+1:
+				print("connected to all neighbors and cloud")
 				break
-			for server in self.server_port:
+			for server in self.N+[(self.cloud_ip,self.cloud_port)]:
 				if server not in [port[1] for port in self.received_conn]:	
 					s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 					try:
 						s.settimeout(2)
-						s.connect(('127.0.0.1', server))	
+						s.connect(server)	
 						print( "(", server, ")\n")
 						time.sleep(1)
 						print("Connected...\n")
@@ -60,7 +62,34 @@ class fog_node:
 						self.received_conn.append((ip,server))
 					except:
 						continue
-				
-fognode = fog_node()
-fognode.conn_establish()
+		self.communication()
 
+	def communication(self):
+		iot_socket_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		while True:
+			iot_socket_rsv.bind(("",self.My_udp))
+			
+		
+			data,addr = iot_socket_rsv.recvfrom(1024)
+			print("Message received from ip : {} is : {}".format(addr,data.decode()))
+			port = int(data.decode().split(":")[1])
+			print(port)
+			Message = raw_input("Enter the message:")
+			iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+			iot_socket_send.sendto(Message.encode(),("127.0.0.1",port))
+							
+
+#fognode = fog_node()
+#fognode.conn_establish()
+
+if __name__=="__main__":
+	My_tcp = int(sys.argv[1])
+	My_udp = int(sys.argv[2])
+	cloud_IP = sys.argv[3]
+	cloud_port = int(sys.argv[4])
+	N = zip(sys.argv[5::2],map(int,sys.argv[6::2]))
+	Fog = fog_node(My_tcp,My_udp,cloud_IP,cloud_port,N)
+	Fog.conn_establish()
+	print(My_tcp,My_udp,cloud_IP,cloud_port,N)
+		 
