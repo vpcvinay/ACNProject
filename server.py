@@ -1,10 +1,15 @@
 import time, socket,threading,sys
+'''connection between fog nodes is done ,connection between iot to one fog node is done'''
+
+UDP_IP="127.0.0.1"
+UDP_PORT=1234
+s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+s.bind((UDP_IP,UDP_PORT))
 
 
-print("\nWelcome to Chat Room\n")
-print("Initialising....\n")
-time.sleep(1)
-
+data,addr=s.recvfrom(1024)
+print("received message")
+print(data.decode())
 
 class fog_node:
 	def __init__(self):

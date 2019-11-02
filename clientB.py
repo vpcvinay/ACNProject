@@ -38,7 +38,7 @@ class fog_node:
 				s.close()
 				continue
 		print("Number of connection established : {}".format(self.no_of_conn))
-		while True:
+	dd	while True:
 			if self.no_of_conn==self.neighbors:
 				print("connected to all neighbors")
 				break
