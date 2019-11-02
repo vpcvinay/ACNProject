@@ -20,6 +20,7 @@ class fog_node:
 		self.cloud_ip = C
 		self.cloud_port = Tcp0		
 		self.My_ip = "127.0.0.1"
+		self.recv_queue=[]
 		
 	def conn_establish(self):
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -46,7 +47,7 @@ class fog_node:
 		print("Number of connection established : {}".format(self.no_of_conn))
 		
 		while True:
-			if self.no_of_conn==self.neighbors+1:
+			if self.no_of_conn==self.neighbors:
 				print("connected to all neighbors and cloud")
 				break
 			for server in self.N+[(self.cloud_ip,self.cloud_port)]:
@@ -62,27 +63,38 @@ class fog_node:
 						self.received_conn.append((ip,server))
 					except:
 						continue
-		self.communication()
+		recv_thread=threading.Thread(target=self.Recv_comm)
+		send_thread=threading.Thread(target=self.Send_comm)
 
-	def communication(self):
-		iot_socket_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-		iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-		while True:
-			iot_socket_rsv.bind(("",self.My_udp))
-			
+		recv_thread.start()
+		send_thread.start()
 		
+		recv_thread.join()
+		send_thread.join()
+		if not send_thread.isAlive():
+			recv_thread.terminate()
+
+	def Recv_comm(self):
+		iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		iot_socket_rsv.bind(("",self.My_udp))
+		while True:
+			time.sleep(1)
 			data,addr = iot_socket_rsv.recvfrom(1024)
 			print("Message received from ip : {} is : {}".format(addr,data.decode()))
-			port = int(data.decode().split(":")[1])
-			print(port)
+			self.recv_queue.append(data.decode())
+			self.port = int(data.decode().split(":")[1])
+						
+
+	def Send_comm(self):
+		iot_socket_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		while True:
+			time.sleep(1)
 			Message = raw_input("Enter the message:")
+			if(Message=="exit"):
+				break
 			iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-			iot_socket_send.sendto(Message.encode(),("127.0.0.1",port))
-							
-
-#fognode = fog_node()
-#fognode.conn_establish()
-
+			iot_socket_send.sendto(Message.encode(),("127.0.0.1",self.port))
+		
 if __name__=="__main__":
 	My_tcp = int(sys.argv[1])
 	My_udp = int(sys.argv[2])
