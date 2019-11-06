@@ -71,29 +71,34 @@ class fog_node:
 		
 		recv_thread.join()
 		send_thread.join()
-		if not send_thread.isAlive():
-			recv_thread.terminate()
-
+		
+		print(self.recv_queue)
 	def Recv_comm(self):
 		iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		iot_socket_rsv.bind(("",self.My_udp))
 		while True:
 			time.sleep(1)
 			data,addr = iot_socket_rsv.recvfrom(1024)
+			mesage = str(data.split(":")[-1].decode())
+			#print(mesage,type(mesage))
+			if(mesage == "exit"):
+				print("Exiting the receive comm block")
+				break
 			print("Message received from ip : {} is : {}".format(addr,data.decode()))
 			self.recv_queue.append(data.decode())
 			self.port = int(data.decode().split(":")[1])
-						
+				
 
 	def Send_comm(self):
 		iot_socket_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		while True:
 			time.sleep(1)
 			Message = raw_input("Enter the message:")
-			if(Message=="exit"):
-				break
 			iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 			iot_socket_send.sendto(Message.encode(),("127.0.0.1",self.port))
+			if(Message=="exit"):	
+				print("Exiting the send communication Block")
+				break
 		
 if __name__=="__main__":
 	My_tcp = int(sys.argv[1])
@@ -103,5 +108,5 @@ if __name__=="__main__":
 	N = zip(sys.argv[5::2],map(int,sys.argv[6::2]))
 	Fog = fog_node(My_tcp,My_udp,cloud_IP,cloud_port,N)
 	Fog.conn_establish()
-	print(My_tcp,My_udp,cloud_IP,cloud_port,N)
+	#print(My_tcp,My_udp,cloud_IP,cloud_port,N)
 		 
