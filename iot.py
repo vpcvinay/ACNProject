@@ -18,7 +18,7 @@ def Iot_node(My_udp,N):
 def Send_comm(My_udp,N):
 	s_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 	while True:
-		message = raw_input("Enter Message:")
+		message = input("Enter Message:")
 		MESSAGE = 'port:'+str(My_udp)+":"+str(message)
 		ip="127.0.0.1"
 		s_send.sendto(MESSAGE.encode(),random.choice(N))
@@ -38,5 +38,5 @@ def Recv_comm(My_udp,N):
 
 if __name__=="__main__":
 	My_udp = int(sys.argv[1])
-	N = zip(sys.argv[2::2],map(int,sys.argv[3::2]))
+	N = list(zip(sys.argv[2::2],map(int,sys.argv[3::2])))
 	Iot_node(My_udp,N)
