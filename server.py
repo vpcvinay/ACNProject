@@ -1,5 +1,9 @@
 import time, socket,threading,sys
 import random
+"""1. To be done- fog to fog message forwarding
+   2. Queue State exchange between fog nodes
+   3. Fog to cloud message forwarding
+   4. cloud to iot response"""
 
 class fog_node:
 	def __init__(self,My_tcp,my_udp,C,Tcp0,N,Max_Res_Tym,t):
@@ -64,10 +68,8 @@ class fog_node:
 						continue
 		iot_recv_thread=threading.Thread(target=self.iot_Recv_comm)
 		iot_send_thread=threading.Thread(target=self.iot_Send_comm)
-
 		#fog_recv_thread=threading.Thread(target=self.fog_Recv_comm)
 		#fog_send_thread=threading.Thread(target=self.fog_Send_comm)
-		
 		iot_recv_thread.start()
 		iot_send_thread.start()
 		#fog_recv_thread.start()
@@ -80,7 +82,6 @@ class fog_node:
 		
 		print(self.conn_state)
 
-
 	def iot_Recv_comm(self):
 		iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		iot_socket_rsv.bind(("",self.My_udp))
@@ -88,32 +89,32 @@ class fog_node:
 			time.sleep(1)
 			data,addr = iot_socket_rsv.recvfrom(1024)
 			mesage = data.decode().split(":")
-			Process_Tym=message[-1]
-			if(self.Q_Tym+Process_Tym<=Max_Res_Tym):
+			Process_Tym=int(mesage[-1])
+			if(self.Q_Tym+Process_Tym<=self.Max_Res_Tym):
 				self.recv_queue.append(data.decode())
 				self.Q_Tym+=Process_Tym
 			else:
-				s
-
-			if(mesage == "exit"):
-				print("Exiting the receive comm block")
-				break
+				self.Frwd_Q.append(data)
+				self.Q_Tym+=Process_Tym
+				if(mesage == "exit"):
+					print("Exiting the receive comm block")
+					break
 			print("Message received from ip : {} is : {}".format(addr,data.decode()))
 				
 
 	def iot_Send_comm(self):
 		iot_socket_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-		time.sleep(4)
+		#time.sleep(4)
 		while True:
 			time.sleep(1)
 			if self.recv_queue:
-				Message = self.recv_queue.pop(0).split(":")
+				#time.sleep(1)
 				iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-				port = int(Message[3])
-				Message_send= "Reply to the IOT with Message ID:"+Message[5]
-				iot_socket_send.sendto(Message_send.encode(),("127.0.0.1",port))
-				print("Sent Reply to the IOT for message ID:"+Message[5])
-				if(Message[5]=="exit"):
+				Req_Prs=self.Req_Process()
+				Message_send= "Reply to the IOT with Message ID:"+Req_Prs[-1]
+				iot_socket_send.sendto(Message_send.encode(),(Req_Prs[0],Req_Prs[1]))
+				print("Sent Reply to the IOT for message ID:"+Req_Prs[-1])
+				if(Req_Prs[-1]=="exit"):
 					print("Exiting the send communication Block")
 					break
 				
@@ -134,8 +135,13 @@ class fog_node:
 				print("Exiting the receive comm block")
 				break
 			time.sleep(1)
-			
-		
+
+	def Req_Process(self):
+        	message=self.recv_queue.pop(0).split(":")
+	        Process_Tym=int(message[-1])
+        	time.sleep(Process_Tym)
+	        self.Q_Tym-=Process_Tym
+        	return [message[0],int(message[1]),message[3]]
 
 	def fog_Recv_comm(self):
 		while True:
@@ -149,12 +155,10 @@ class fog_node:
 						break
 				except:
 					continue
-
-	def 
 		
 		
 if __name__=="__main__":
-	Max_Res_Tym = int(sys.argv[1]
+	Max_Res_Tym = int(sys.argv[1])
 	t=int(sys.argv[2])
 	My_tcp = int(sys.argv[3])
 	My_udp = int(sys.argv[4])
