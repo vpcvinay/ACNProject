@@ -1,0 +1,10 @@
+Communicating to Fog_node
+Sent message to FOG with ID:1
+Sent message to FOG with ID:2
+Sent message to FOG with ID:3
+Sent message to FOG with ID:4
+Recieved Message : Reply to the IOT with Message ID:1
+Sent message to FOG with ID:5
+Sent message to FOG with ID:6
+Sent message to FOG with ID:7
+Sent message to FOG with ID:8

@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "server.py", line 64, in conn_establish
+    srv_soc.connect(server)	
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "server.py", line 235, in <module>
+    Fog.conn_establish()
+  File "server.py", line 64, in conn_establish
+    srv_soc.connect(server)	
+KeyboardInterrupt
+Connection not established
+Connection not established
+Number of connection established : 0

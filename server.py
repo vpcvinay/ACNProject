@@ -1,7 +1,7 @@
 import time, socket,threading,sys
 import random
-"""1. To be done- fog to fog message forwarding
-   2. Queue State exchange between fog nodes
+"""1. To be done- best fog node chooice
+   2. not to forward to the node from which it received the request
    3. Fog to cloud message forwarding
    4. cloud to iot response"""
 
@@ -23,7 +23,10 @@ class fog_node:
 		self.t=t
 		self.Q_Tym=0
 		self.Frwd_Q=[]
-		
+		self.cloud_Q=[]
+		self.Q_state={}
+		self.lock=threading.Lock()
+
 	def conn_establish(self):
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		start = time.time()
@@ -68,39 +71,54 @@ class fog_node:
 						continue
 		iot_recv_thread=threading.Thread(target=self.iot_Recv_comm)
 		iot_send_thread=threading.Thread(target=self.iot_Send_comm)
-		#fog_recv_thread=threading.Thread(target=self.fog_Recv_comm)
-		#fog_send_thread=threading.Thread(target=self.fog_Send_comm)
+		fog_recv_thread=threading.Thread(target=self.fog_Recv_comm)
+		fog_send_thread=threading.Thread(target=self.fog_Send_comm)
 		iot_recv_thread.start()
 		iot_send_thread.start()
-		#fog_recv_thread.start()
-		#fog_send_thread.start()
+		fog_recv_thread.start()
+		fog_send_thread.start()
+		time.sleep(2)
 		
 		iot_recv_thread.join()
 		iot_send_thread.join()
-		#fog_recv_thread.join()
-		#fog_send_thread.join()
+		fog_recv_thread.join()
+		fog_send_thread.join()
 		
-		print(self.conn_state)
+		print(self.cloud_Q)
 
 	def iot_Recv_comm(self):
 		iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		iot_socket_rsv.bind(("",self.My_udp))
+		#ip_addr:UDP:message:Seq_No:Forward_Limit:Processing_Time
 		while True:
 			time.sleep(1)
 			data,addr = iot_socket_rsv.recvfrom(1024)
+			n=6
 			mesage = data.decode().split(":")
-			Process_Tym=int(mesage[-1])
-			if(self.Q_Tym+Process_Tym<=self.Max_Res_Tym):
-				self.recv_queue.append(data.decode())
-				self.Q_Tym+=Process_Tym
-			else:
-				self.Frwd_Q.append(data)
-				self.Q_Tym+=Process_Tym
-				if(mesage == "exit"):
-					print("Exiting the receive comm block")
-					break
-			print("Message received from ip : {} is : {}".format(addr,data.decode()))
-				
+			mesage=[mesage[i*n:(i+1)*n] for i in range((len(mesage)+n-1)//n)]
+			for msg in mesage:
+				if msg[0]=='':
+					continue
+				Process_Tym=int(msg[-1])
+				if(self.Q_Tym+Process_Tym<=self.Max_Res_Tym):
+					self.lock.acquire()
+					data = ':'.join(msg)
+					self.recv_queue.append(data)
+					self.lock.release()
+					self.Q_Tym+=Process_Tym
+				else:
+					msg[4]=str(int(msg[4])-1)
+					data = ':'.join(msg+[''])
+					if(int(msg[4])==0):
+						self.cloud_Q.append(data)
+						print("Sending message to the cloud node : {}".format(self.cloud_Q))
+						continue
+					self.Frwd_Q.append(data)
+					if(msg[4] == "exit"):
+						print("Exiting the receive comm block")
+						break
+				print("Message received from ip : {} is : {}".format(addr,data))
+
 
 	def iot_Send_comm(self):
 		iot_socket_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
@@ -109,7 +127,7 @@ class fog_node:
 			time.sleep(1)
 			if self.recv_queue:
 				#time.sleep(1)
-				iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+				#iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 				Req_Prs=self.Req_Process()
 				Message_send= "Reply to the IOT with Message ID:"+Req_Prs[-1]
 				iot_socket_send.sendto(Message_send.encode(),(Req_Prs[0],Req_Prs[1]))
@@ -122,40 +140,88 @@ class fog_node:
 				print("No Message to Reply")
 
 	def fog_Send_comm(self):
+		start_time=time.time()
 		print(self.conn_state)
 		while True:
-			#while self.recv_queue and self.conn_state:
-			rand_fog=random.choice(list(self.conn_state.values()))
-			#msg=self.recv.pop(0)
-			msg = input("Enter Message to send")
-			rand_fog.sendall(msg.encode())
-			print("messge sent to neighbour fog node {}".format(msg))
-			mesage = str(msg.split(":")[-1])
-			if(mesage == "exit"):
-				print("Exiting the receive comm block")
-				break
-			time.sleep(1)
+			crnt_time=time.time()
+			while self.Frwd_Q and self.conn_state:
+				rand_fog=random.choice(list(self.conn_state.keys()))
+				msg=self.Frwd_Q.pop(0)
+				mesg = msg.split(":")
+				if(int(mesg[4])==0):
+					self.cloud_Q.append(msg)
+					print("appending to cloud_Q ",self.cloud_Q)
+					continue
+				self.conn_state.get(rand_fog).sendall(msg.encode())
+				print("messge :{} sent to neighbour fog node: {}".format(msg,rand_fog))
+				mesage = str(msg.split(":")[4])
+				if(mesage == "exit"):
+					print("Exiting the receive comm block")
+					break
+				time.sleep(1)
+			
+			if(crnt_time-start_time>=3.0):
+				self.Forward_Qstate()
+				start_time=crnt_time
+
+
+	def Forward_Qstate(self):
+		Qstate_msg="Q:"+self.My_ip+":"+str(self.My_tcp)+":"+str(self.Max_Res_Tym)+":"+str(self.Q_Tym)+":0:"
+		print("Qstate is : {}".format(Qstate_msg))
+		for ip in self.conn_state:
+			desc = self.conn_state.get(ip)
+			print("Forwarding Q_state :{} to message to : {}".format(Qstate_msg,ip))
+			desc.sendall(Qstate_msg.encode())
+			
+
 
 	def Req_Process(self):
-        	message=self.recv_queue.pop(0).split(":")
-	        Process_Tym=int(message[-1])
-        	time.sleep(Process_Tym)
-	        self.Q_Tym-=Process_Tym
-        	return [message[0],int(message[1]),message[3]]
+		self.lock.acquire()
+		message=self.recv_queue.pop(0).split(":")
+		self.lock.release()
+		Process_Tym=int(message[5])
+		time.sleep(Process_Tym)
+		self.Q_Tym-=Process_Tym
+		return [message[0],int(message[1]),message[3]]
 
 	def fog_Recv_comm(self):
+		#self.QQqueue = []
 		while True:
 			for nodes in self.conn_state:
+				time.sleep(1)
 				try:
-					msg=self.conn_state.get(nodes).recv(1024)
-					print(msg.decode()) 
-					mesage = str(msg.split(":")[-1].decode())
-					if(mesage == "exit"):
-						print("Exiting the receive comm block")
-						break
+					data=self.conn_state.get(nodes).recv(1024)
+					n=6
+					mesage = data.decode().split(":")
+					mesage=[mesage[i*n:(i+1)*n] for i in range((len(mesage)+n-1)//n)]
+					for msg in mesage:
+						if msg[0]=='':
+							continue
+						print("Message : {} received from : {}".format(data,nodes))
+						if(msg[0]=="Q"):
+							#decode_msg=msg.decode().split(":")
+							self.Q_state.update({tuple(msg[1:3]):tuple(msg[3:5])})
+							#print(self.Q_state)
+							continue
+						else:
+							print("entering else")
+							#mesage = str(msg.split(":")[3].decode())
+							msg[-2] = str(int(msg[-2])-1)
+							data = ':'.join(msg+[''])
+							if(self.Q_Tym+int(msg[-1])>self.Max_Res_Tym):
+								self.Frwd_Q.append(data)
+								print("appending to Frwd_Q")
+								continue
+							else:
+								self.Q_Tym+=int(msg[-1])
+								self.recv_queue.append(data)
+								print("Appending to Recv_Q")
+							if(mesage == "exit"):
+								print("Exiting the receive comm block")
+								break
 				except:
 					continue
-		
+
 		
 if __name__=="__main__":
 	Max_Res_Tym = int(sys.argv[1])
