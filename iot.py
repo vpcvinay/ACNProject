@@ -6,7 +6,7 @@ class variables:
 		self.N = N
 		self.My_udp = My_udp
 		self.interval=interval
-
+		self.ipaddr = "127.0.0.1"
 
 def Iot_node(self):
 	print("Communicating to Fog_node")
@@ -23,12 +23,13 @@ def Iot_node(self):
 
 def request_num_gen():
 	count = 0
-	while count<10:	
+	while count<20:	
 		count+=1
 		yield count
+
 def ip_addr(self):
 	hostname=socket.gethostname()
-	self.ipaddr=socket.gethostbyname(hostname)
+	#self.ipaddr=socket.gethostbyname(hostname)
 	
 def Send_comm(self):
 	s_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)

@@ -141,19 +141,26 @@ class fog_node:
 
 	def fog_Send_comm(self):
 		start_time=time.time()
-		print(self.conn_state)
+		print("The connection states :{} \n".format(self.conn_state))		
 		while True:
 			crnt_time=time.time()
 			while self.Frwd_Q and self.conn_state:
-				rand_fog=random.choice(list(self.conn_state.keys()))
 				msg=self.Frwd_Q.pop(0)
 				mesg = msg.split(":")
 				if(int(mesg[4])==0):
 					self.cloud_Q.append(msg)
 					print("appending to cloud_Q ",self.cloud_Q)
 					continue
-				self.conn_state.get(rand_fog).sendall(msg.encode())
-				print("messge :{} sent to neighbour fog node: {}".format(msg,rand_fog))
+				fog_node = self.best_Fog_node_selection()
+				#print("Printing the output ===== {}\n".format(fog_node))
+				if fog_node:
+					#print("Conn State is ===== {}\n".format(self.conn_state.get((fog_node[0],int(fog_node[1])))))
+					self.conn_state.get((fog_node[0],int(fog_node[1]))).sendall(msg.encode())
+					print("sending to best node ==== {}\n".format(fog_node))
+				else:
+					print("sending to cloud node====")
+					self.cloud_Q.append(msg.encode())
+
 				mesage = str(msg.split(":")[4])
 				if(mesage == "exit"):
 					print("Exiting the receive comm block")
@@ -173,7 +180,16 @@ class fog_node:
 			print("Forwarding Q_state :{} to message to : {}".format(Qstate_msg,ip))
 			desc.sendall(Qstate_msg.encode())
 			
-
+	def best_Fog_node_selection(self):
+		best_capacity = 0
+		best_node = 0
+		for qstate in self.Q_state:
+			max_res_Tym,q_Tym = self.Q_state.get(qstate)
+			capacity = float(max_res_Tym)-float(q_Tym)
+			if capacity>best_capacity:
+				best_capacity = capacity
+				best_node = qstate
+		return best_node
 
 	def Req_Process(self):
 		self.lock.acquire()
@@ -201,7 +217,7 @@ class fog_node:
 						if(msg[0]=="Q"):
 							#decode_msg=msg.decode().split(":")
 							self.Q_state.update({tuple(msg[1:3]):tuple(msg[3:5])})
-							#print(self.Q_state)
+							print("The Q_state is :{}".format(self.Q_state))
 							continue
 						else:
 							print("entering else")
