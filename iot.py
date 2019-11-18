@@ -58,7 +58,7 @@ def Recv_comm(self):
 		if(rsv_msg_d[-1]=="exit"):
 			print("Ending the Rev comm block")
 			break
-		print("Recieved Message : {}".format(rsv_msg.decode()))
+		print("Recieved Message : {}".format(rsv_msg))
 
 if __name__=="__main__":
 	interval=float(sys.argv[1])/1000
