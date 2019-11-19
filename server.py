@@ -26,6 +26,7 @@ class fog_node:
 		self.cloud_Q=[]
 		self.Q_state={}
 		self.lock=threading.Lock()
+		self.cloud_node=[]
 
 	def conn_establish(self):
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -53,7 +54,7 @@ class fog_node:
 		print("Number of connection established : {}".format(self.no_of_conn))
 		
 		while True:
-			if self.no_of_conn==self.neighbors:
+			if self.no_of_conn==self.neighbors+1:
 				print("connected to all neighbors and cloud")
 				break
 			for server in self.N+[(self.cloud_ip,self.cloud_port)]:
@@ -66,26 +67,43 @@ class fog_node:
 						time.sleep(1)
 						print("Connected...\n")
 						self.no_of_conn+=1
-						self.conn_state.update({server:srv_soc})
+						if server in [(self.cloud_ip,self.cloud_port)]:
+							self.cloud_node.append(srv_soc)
+						else:
+							self.conn_state.update({server:srv_soc})
 					except:
 						continue
 		iot_recv_thread=threading.Thread(target=self.iot_Recv_comm)
 		iot_send_thread=threading.Thread(target=self.iot_Send_comm)
 		fog_recv_thread=threading.Thread(target=self.fog_Recv_comm)
 		fog_send_thread=threading.Thread(target=self.fog_Send_comm)
+		fog_cloud_thread=threading.Thread(target=self.fog_cloud_msg)
+
 		iot_recv_thread.start()
 		iot_send_thread.start()
 		fog_recv_thread.start()
 		fog_send_thread.start()
+		fog_cloud_thread.start()
 		time.sleep(2)
 		
 		iot_recv_thread.join()
 		iot_send_thread.join()
 		fog_recv_thread.join()
 		fog_send_thread.join()
+		fog_cloud_thread.join()
 		
 		print(self.cloud_Q)
 
+	def fog_cloud_msg(self):
+		while True:
+			print("Cloud node buffer =========== *****",self.cloud_Q)
+			if not self.cloud_Q:
+				time.sleep(1)
+				continue
+			msg=self.cloud_Q.pop(0)
+			self.cloud_node[0].sendall(msg.encode())
+			time.sleep(1)
+		
 	def iot_Recv_comm(self):
 		iot_socket_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		iot_socket_rsv.bind(("",self.My_udp))
@@ -152,14 +170,14 @@ class fog_node:
 					print("appending to cloud_Q ",self.cloud_Q)
 					continue
 				fog_node = self.best_Fog_node_selection()
-				#print("Printing the output ===== {}\n".format(fog_node))
+				print("Printing the output ===== {}\n".format(fog_node))
 				if fog_node:
 					#print("Conn State is ===== {}\n".format(self.conn_state.get((fog_node[0],int(fog_node[1])))))
-					self.conn_state.get((fog_node[0],int(fog_node[1]))).sendall(msg.encode())
+					self.conn_state.get(fog_node).sendall(msg.encode())
 					print("sending to best node ==== {}\n".format(fog_node))
 				else:
 					print("sending to cloud node====")
-					self.cloud_Q.append(msg.encode())
+					self.cloud_Q.append(msg)
 
 				mesage = str(msg.split(":")[4])
 				if(mesage == "exit"):
@@ -189,6 +207,7 @@ class fog_node:
 			if capacity>best_capacity:
 				best_capacity = capacity
 				best_node = qstate
+		print("Printing the best_node : {}".format(best_node))
 		return best_node
 
 	def Req_Process(self):
@@ -216,7 +235,7 @@ class fog_node:
 						print("Message : {} received from : {}".format(data,nodes))
 						if(msg[0]=="Q"):
 							#decode_msg=msg.decode().split(":")
-							self.Q_state.update({tuple(msg[1:3]):tuple(msg[3:5])})
+							self.Q_state.update({nodes:tuple(msg[3:5])})
 							print("The Q_state is :{}".format(self.Q_state))
 							continue
 						else:
@@ -237,7 +256,6 @@ class fog_node:
 								break
 				except:
 					continue
-
 		
 if __name__=="__main__":
 	Max_Res_Tym = int(sys.argv[1])

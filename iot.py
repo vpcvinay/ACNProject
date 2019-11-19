@@ -40,14 +40,15 @@ def Send_comm(self):
 			Seq_No = str(req_num.__next__())
 		except StopIteration:
 			Seq_No = "exit"
+			#pass
 		Req_Frwd_Lmt=2#random.randint(2,5)
 		Req_Prcs_Tym=3#random.randint(3,7)
-		MESSAGE = self.ipaddr+":"+str(self.My_udp)+":Request from the IOT:"+Seq_No+":"+str(Req_Frwd_Lmt)+":"+str(Req_Prcs_Tym)+":"
-		s_send.sendto(MESSAGE.encode(),random.choice(self.N))
-		print("Sent message to FOG with ID:"+Seq_No)
 		if(Seq_No=="exit"):
 			print("Ending the Send comm block")
 			break
+		MESSAGE = self.ipaddr+":"+str(self.My_udp)+":Request from the IOT:"+Seq_No+":"+str(Req_Frwd_Lmt)+":"+str(Req_Prcs_Tym)+":"
+		s_send.sendto(MESSAGE.encode(),random.choice(self.N))
+		print("Sent message to FOG with ID:"+Seq_No)
 		time.sleep(self.interval)
 
 def Recv_comm(self):
@@ -56,9 +57,9 @@ def Recv_comm(self):
 	while True:
 		rsv_msg,addr = s_rsv.recvfrom(1024)
 		rsv_msg_d = rsv_msg.decode().split(":")
-		if(rsv_msg_d[-1]=="exit"):
-			print("Ending the Rev comm block")
-			break
+		#if(rsv_msg_d[-1]=="exit"):
+		#	print("Ending the Rev comm block")
+		#	break
 		print("Recieved Message : {}".format(rsv_msg))
 
 if __name__=="__main__":
