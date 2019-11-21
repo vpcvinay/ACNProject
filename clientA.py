@@ -44,10 +44,10 @@ class fog_node:
 				continue
 		print("Number of connection established : {}".format(self.no_of_conn))
 		while True:
-			if self.no_of_conn==self.neighbors:
+			if self.no_of_conn==self.neighbors+1:
 				print("connected to all neighbors")
 				break
-			for server in self.N:
+			for server in self.N+[("127.0.0.1",8000)]:
 				if server not in [port[1] for port in self.received_conn]:	
 					s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 					try:
@@ -57,9 +57,15 @@ class fog_node:
 						time.sleep(1)
 						print("Connected...\n")
 						self.no_of_conn+=1
-						self.received_conn.append((ip,server))
+						self.received_conn.append(s)
 					except:
 						continue
+		
+		while True:
+			for srv in self.received_conn:
+				msg = str(input("Enter the message: "))
+				srv.sendall(msg.encode())
+				
 				
 #fognode = fog_node()
 #fognode.conn_establish()
@@ -69,7 +75,7 @@ if __name__=="__main__":
 	My_udp = int(sys.argv[2])
 	cloud_IP = sys.argv[3]
 	cloud_port = int(sys.argv[4])
-	N = zip(sys.argv[5::2],map(int,sys.argv[6::2]))
+	N = list(zip(sys.argv[5::2],map(int,sys.argv[6::2])))
 	Fog = fog_node(My_tcp,My_udp,cloud_IP,cloud_port,N)
 	Fog.conn_establish()
 	print(My_tcp,My_udp,cloud_IP,cloud_port,N)

@@ -50,8 +50,9 @@ class cloud_node:
 			connections = self.incoming_ip
 			self.lock.release()
 			for nodes in connections:
-				print("IP ip ip ip ip ip ip ",connections)
+				#print("IP ip ip ip ip ip ip ",connections)
 				try:
+					nodes.settimeout(0.5)
 					mesage=nodes.recv(1024).decode().split(":")
 					print("Read message ",mesage)
 					n=6
@@ -66,7 +67,7 @@ class cloud_node:
 						print("Received Message from Fog ",self.fog_recv_msg)
 					time.sleep(0.6)
 				except:
-					time.sleep(0.6)
+					time.sleep(0.2)
 					continue
 			
 

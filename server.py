@@ -164,12 +164,12 @@ class fog_node:
 			crnt_time=time.time()
 			while self.Frwd_Q and self.conn_state:
 				msg=self.Frwd_Q.pop(0)
-				mesg = msg.split(":")
+				mesg = msg[0].split(":")
 				if(int(mesg[4])==0):
 					self.cloud_Q.append(msg)
 					print("appending to cloud_Q ",self.cloud_Q)
 					continue
-				fog_node = self.best_Fog_node_selection()
+				fog_node = self.best_Fog_node_selection(msg[1])
 				print("Printing the output ===== {}\n".format(fog_node))
 				if fog_node:
 					#print("Conn State is ===== {}\n".format(self.conn_state.get((fog_node[0],int(fog_node[1])))))
@@ -198,10 +198,12 @@ class fog_node:
 			print("Forwarding Q_state :{} to message to : {}".format(Qstate_msg,ip))
 			desc.sendall(Qstate_msg.encode())
 			
-	def best_Fog_node_selection(self):
+	def best_Fog_node_selection(self,node):
 		best_capacity = 0
 		best_node = 0
 		for qstate in self.Q_state:
+			if(qstate==node):
+				continue
 			max_res_Tym,q_Tym = self.Q_state.get(qstate)
 			capacity = float(max_res_Tym)-float(q_Tym)
 			if capacity>best_capacity:
@@ -225,6 +227,7 @@ class fog_node:
 			for nodes in self.conn_state:
 				time.sleep(1)
 				try:
+					self.conn_state.get(nodes).settimeout(0.5)
 					data=self.conn_state.get(nodes).recv(1024)
 					n=6
 					mesage = data.decode().split(":")
@@ -244,7 +247,7 @@ class fog_node:
 							msg[-2] = str(int(msg[-2])-1)
 							data = ':'.join(msg+[''])
 							if(self.Q_Tym+int(msg[-1])>self.Max_Res_Tym):
-								self.Frwd_Q.append(data)
+								self.Frwd_Q.append((data,nodes))
 								print("appending to Frwd_Q")
 								continue
 							else:

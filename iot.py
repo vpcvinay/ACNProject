@@ -7,6 +7,8 @@ class variables:
 		self.My_udp = My_udp
 		self.interval=interval
 		self.ipaddr = "127.0.0.1"
+		self.max_msg=20
+		self.s_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
 def Iot_node(self):
 	print("Communicating to Fog_node")
@@ -21,9 +23,9 @@ def Iot_node(self):
 	
 	print("Communication Ended....")
 
-def request_num_gen():
+def request_num_gen(self):
 	count = 0
-	while count<20:	
+	while count<self.max_msg:	
 		count+=1
 		yield count
 
@@ -32,8 +34,7 @@ def ip_addr(self):
 	#self.ipaddr=socket.gethostbyname(hostname)
 	
 def Send_comm(self):
-	s_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-	req_num = request_num_gen()
+	req_num = request_num_gen(self)
 	ip_addr(self)
 	while True:
 		try:
@@ -45,22 +46,29 @@ def Send_comm(self):
 		Req_Prcs_Tym=3#random.randint(3,7)
 		if(Seq_No=="exit"):
 			print("Ending the Send comm block")
+			self.s_send.close()
 			break
 		MESSAGE = self.ipaddr+":"+str(self.My_udp)+":Request from the IOT:"+Seq_No+":"+str(Req_Frwd_Lmt)+":"+str(Req_Prcs_Tym)+":"
-		s_send.sendto(MESSAGE.encode(),random.choice(self.N))
+		self.s_send.sendto(MESSAGE.encode(),random.choice(self.N))
 		print("Sent message to FOG with ID:"+Seq_No)
 		time.sleep(self.interval)
 
 def Recv_comm(self):
-	s_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-	s_rsv.bind(("",self.My_udp))
+	count=0
+	self.s_rsv=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+	self.s_rsv.bind(("",self.My_udp))
 	while True:
-		rsv_msg,addr = s_rsv.recvfrom(1024)
+		rsv_msg,addr = self.s_rsv.recvfrom(1024)
 		rsv_msg_d = rsv_msg.decode().split(":")
 		#if(rsv_msg_d[-1]=="exit"):
 		#	print("Ending the Rev comm block")
 		#	break
+		count+=1
 		print("Recieved Message : {}".format(rsv_msg))
+		if(count==self.max_msg):
+			self.s_rsv.close()
+			break
+			
 
 if __name__=="__main__":
 	interval=float(sys.argv[1])/1000
