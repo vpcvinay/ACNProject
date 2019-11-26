@@ -27,6 +27,8 @@ class fog_node:
 		self.Q_state={}
 		self.lock=threading.Lock()
 		self.cloud_node=[]
+		self.node_up_time = time.time()
+		self.up_time = 10
 
 	def conn_establish(self):
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -91,11 +93,15 @@ class fog_node:
 		fog_recv_thread.join()
 		fog_send_thread.join()
 		fog_cloud_thread.join()
-		
-		print(self.cloud_Q)
+			
+		print(self.cloud_Q,time.time()-self.node_up_time)
 
 	def fog_cloud_msg(self):
 		while True:
+			if((time.time()-self.node_up_time)>self.up_time):
+				print("Ending fog cloud end ")
+				break
+			
 			print("Cloud node buffer =========== *****",self.cloud_Q)
 			if not self.cloud_Q:
 				time.sleep(1)
@@ -109,39 +115,49 @@ class fog_node:
 		iot_socket_rsv.bind(("",self.My_udp))
 		#ip_addr:UDP:message:Seq_No:Forward_Limit:Processing_Time
 		while True:
+			if((time.time()-self.node_up_time)>self.up_time):
+				print("Iot recv comm end ")
+				break
+			
 			time.sleep(1)
-			data,addr = iot_socket_rsv.recvfrom(1024)
-			n=6
-			mesage = data.decode().split(":")
-			mesage=[mesage[i*n:(i+1)*n] for i in range((len(mesage)+n-1)//n)]
-			for msg in mesage:
-				if msg[0]=='':
-					continue
-				Process_Tym=int(msg[-1])
-				if(self.Q_Tym+Process_Tym<=self.Max_Res_Tym):
-					self.lock.acquire()
-					data = ':'.join(msg)
-					self.recv_queue.append(data)
-					self.lock.release()
-					self.Q_Tym+=Process_Tym
-				else:
-					msg[4]=str(int(msg[4])-1)
-					data = ':'.join(msg+[''])
-					if(int(msg[4])==0):
-						self.cloud_Q.append(data)
-						print("Sending message to the cloud node : {}".format(self.cloud_Q))
+			try:
+				iot_socket_rsv.settimeout(0.5)
+				data,addr = iot_socket_rsv.recvfrom(1024)
+				n=6
+				mesage = data.decode().split(":")
+				mesage=[mesage[i*n:(i+1)*n] for i in range((len(mesage)+n-1)//n)]
+				for msg in mesage:
+					if msg[0]=='':
 						continue
-					self.Frwd_Q.append(data)
-					if(msg[4] == "exit"):
-						print("Exiting the receive comm block")
-						break
-				print("Message received from ip : {} is : {}".format(addr,data))
-
+					Process_Tym=int(msg[-1])
+					if(self.Q_Tym+Process_Tym<=self.Max_Res_Tym):
+						self.lock.acquire()
+						data = ':'.join(msg)
+						self.recv_queue.append(data)
+						self.lock.release()
+						self.Q_Tym+=Process_Tym
+					else:
+						msg[4]=str(int(msg[4])-1)
+						data = ':'.join(msg+[''])
+						if(int(msg[4])==0):
+							self.cloud_Q.append(data)
+							print("Sending message to the cloud node : {}".format(self.cloud_Q))
+							continue
+						self.Frwd_Q.append(data)
+						if(msg[4] == "exit"):
+							print("Exiting the receive comm block")
+							break
+					print("Message received from ip : {} is : {}".format(addr,data))
+			except:
+				continue
 
 	def iot_Send_comm(self):
 		iot_socket_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		#time.sleep(4)
 		while True:
+			if((time.time()-self.node_up_time)>self.up_time):
+				print("Iot send comm end ")
+				break
 			time.sleep(1)
 			if self.recv_queue:
 				#time.sleep(1)
@@ -161,6 +177,9 @@ class fog_node:
 		start_time=time.time()
 		print("The connection states :{} \n".format(self.conn_state))		
 		while True:
+			if((time.time()-self.node_up_time)>self.up_time):
+				print("Fog Send node end ")
+				break
 			crnt_time=time.time()
 			while self.Frwd_Q and self.conn_state:
 				msg=self.Frwd_Q.pop(0)
@@ -185,6 +204,11 @@ class fog_node:
 					break
 				time.sleep(1)
 			
+			if(not self.conn_state and self.Frwd_Q):
+				msg = self.Frwd_Q.pop(0)
+				self.cloud_Q.append(msg)
+				print("appending to cloud_Q ",self.cloud_Q)
+				
 			if(crnt_time-start_time>=3.0):
 				self.Forward_Qstate()
 				start_time=crnt_time
@@ -224,6 +248,9 @@ class fog_node:
 	def fog_Recv_comm(self):
 		#self.QQqueue = []
 		while True:
+			if((time.time()-self.node_up_time)>self.up_time):
+				print("Fog Recv end ")
+				break
 			for nodes in self.conn_state:
 				time.sleep(1)
 				try:

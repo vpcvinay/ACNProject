@@ -9,6 +9,8 @@ class cloud_node:
 		self.incoming_ip=[]
 		self.fog_recv_msg=[]
 		self.lock = Lock()
+		self.node_up_time = time.time()
+		self.up_time = 15
 
 	def cloud(self):
 		cloud_fog_Conn_thread=threading.Thread(target=self.connection_est)
@@ -27,9 +29,14 @@ class cloud_node:
 	def connection_est(self):
 		self.soc.bind(("",self.port))
 		while True:
+			if((time.time()-self.node_up_time)>self.up_time):
+				print("ending connection thread ")
+				break
+			
 			time.sleep(1)
 			try:
 				self.soc.listen(6)
+				self.soc.settimeout(0.5)
 				conn,addr=self.soc.accept()
 				self.lock.acquire()
 				self.incoming_ip.append(conn)
@@ -44,6 +51,10 @@ class cloud_node:
 	
 	def fog_Recv(self):
 		while True:
+			if((time.time()-self.node_up_time)>self.up_time):
+				print("ending fog recv thread ")
+				break
+			
 			print("For Receive Loop *******\n")
 			time.sleep(1)
 			self.lock.acquire()
@@ -72,7 +83,11 @@ class cloud_node:
 			
 
 	def iot_Send(self):
-		while True:
+		while True:	
+			if((time.time()-self.node_up_time)>self.up_time):
+				print("ending iot send thread ")
+				break
+			
 			print("Printing iot_send ********")
 			time.sleep(1)
 			if(not self.fog_recv_msg):

@@ -4,11 +4,12 @@ import random
 class variables:
 	def __init__(self,interval,My_udp,N):
 		self.N = N
-		self.My_udp = My_udp
-		self.interval=interval
-		self.ipaddr = "127.0.0.1"
-		self.max_msg=20
-		self.s_send=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		self.My_udp 	= My_udp
+		self.interval	= interval
+		self.ipaddr 	= "127.0.0.1"
+		self.max_msg	= 20
+		self.s_send 	= socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		
 
 def Iot_node(self):
 	print("Communicating to Fog_node")
@@ -42,13 +43,13 @@ def Send_comm(self):
 		except StopIteration:
 			Seq_No = "exit"
 			#pass
-		Req_Frwd_Lmt=2#random.randint(2,5)
-		Req_Prcs_Tym=3#random.randint(3,7)
+		Req_Frwd_Lmt=random.randint(2,5)
+		Req_Prcs_Tym=random.randint(3,7)
 		if(Seq_No=="exit"):
 			print("Ending the Send comm block")
 			self.s_send.close()
 			break
-		MESSAGE = self.ipaddr+":"+str(self.My_udp)+":Request from the IOT:"+Seq_No+":"+str(Req_Frwd_Lmt)+":"+str(Req_Prcs_Tym)+":"
+		MESSAGE = self.ipaddr+":"+str(self.My_udp)+":Request from the IOT:"+Seq_No+":"+str(Req_Frwd_Lmt)+":"+str(Req_Prcs_Tym)+":"+":"
 		self.s_send.sendto(MESSAGE.encode(),random.choice(self.N))
 		print("Sent message to FOG with ID:"+Seq_No)
 		time.sleep(self.interval)
