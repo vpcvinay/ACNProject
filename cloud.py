@@ -10,7 +10,7 @@ class cloud_node:
 		self.fog_recv_msg=[]
 		self.lock = Lock()
 		self.node_up_time = time.time()
-		self.up_time = 15
+		self.up_time = 180
 
 	def cloud(self):
 		cloud_fog_Conn_thread=threading.Thread(target=self.connection_est)
@@ -41,9 +41,9 @@ class cloud_node:
 				self.lock.acquire()
 				self.incoming_ip.append(conn)
 				self.lock.release()
-				print("Connection established")
-				print("address and the port: {}".format(addr))
-				print("Received *****",self.incoming_ip)
+				#print("Connection established")
+				#print("address and the port: {}".format(addr))
+				#print("Received *****",self.incoming_ip)
 	
 			except:
 				continue
@@ -55,7 +55,7 @@ class cloud_node:
 				print("ending fog recv thread ")
 				break
 			
-			print("For Receive Loop *******\n")
+			#print("Fog Receive Loop ------- \n")
 			time.sleep(1)
 			self.lock.acquire()
 			connections = self.incoming_ip
@@ -65,8 +65,8 @@ class cloud_node:
 				try:
 					nodes.settimeout(0.5)
 					mesage=nodes.recv(1024).decode().split(":")
-					print("Read message ",mesage)
-					n=6
+					print("Message : {} >>>>>>>> Received from FOG : {}".format(mesage,nodes))
+					n=7
 					mesage=[mesage[i*n:(i+1)*n] for i in range((len(mesage)+n-1)//n)]
 					for msg in mesage:
 						if msg[0]=='':
@@ -75,20 +75,19 @@ class cloud_node:
 						self.lock.acquire()
 						self.fog_recv_msg.append(data)
 						self.lock.release()
-						print("Received Message from Fog ",self.fog_recv_msg)
+						#print("Sent the Received message : {} >>>>>> for processing".format(data))
 					time.sleep(0.6)
 				except:
 					time.sleep(0.2)
 					continue
-			
+	
 
 	def iot_Send(self):
 		while True:	
 			if((time.time()-self.node_up_time)>self.up_time):
 				print("ending iot send thread ")
 				break
-			
-			print("Printing iot_send ********")
+			#print("Iot send block \n")	
 			time.sleep(1)
 			if(not self.fog_recv_msg):
 				#print("fog read buffer in not state ",self.fog_recv_msg)
@@ -98,14 +97,17 @@ class cloud_node:
 			msg=self.fog_recv_msg.pop(0).split(":")
 			self.lock.release()
 			print("Serving the message ",msg)
-			ip,port,Seq_No,Res_Tym=msg[0],int(msg[1]),msg[3],float(msg[5])
+			ip,port,Seq_No,Res_Tym = msg[0],int(msg[1]),msg[3],float(msg[5])
+			hopped_nodes = msg[6].split(',')
+			msg[6] = ','.join(hopped_nodes[:-1]+[';'+self.ip])
+			#print("printing the message ",msg[6])
 			time.sleep(Res_Tym)
 			with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as iot_soc:
-				Message = "Cloud to Iot "+str(Seq_No) 
-				print("Sending message to IOT")
+				Message = ':'.join(["Cloud to Iot ",str(Seq_No),msg[6]])
+				print("Sending message to IOT ",Message)
 				iot_soc.sendto(Message.encode(),(ip,port))
 			#time.sleep(0.3)
-			print("Sent ========================================")
+			#print("Sent ========================================")
 
 
 if __name__=="__main__":

@@ -44,12 +44,12 @@ def Send_comm(self):
 			Seq_No = "exit"
 			#pass
 		Req_Frwd_Lmt=random.randint(2,5)
-		Req_Prcs_Tym=random.randint(3,7)
+		Req_Prcs_Tym=4#random.randint(3,7)
 		if(Seq_No=="exit"):
 			print("Ending the Send comm block")
 			self.s_send.close()
 			break
-		MESSAGE = self.ipaddr+":"+str(self.My_udp)+":Request from the IOT:"+Seq_No+":"+str(Req_Frwd_Lmt)+":"+str(Req_Prcs_Tym)+":"+":"
+		MESSAGE = self.ipaddr+":"+str(self.My_udp)+":Request from the IOT:"+Seq_No+":"+str(Req_Frwd_Lmt)+":"+str(Req_Prcs_Tym)+":"+"0:"
 		self.s_send.sendto(MESSAGE.encode(),random.choice(self.N))
 		print("Sent message to FOG with ID:"+Seq_No)
 		time.sleep(self.interval)
