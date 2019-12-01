@@ -10,7 +10,11 @@ class cloud_node:
 		self.fog_recv_msg=[]
 		self.lock = Lock()
 		self.node_up_time = time.time()
-		self.up_time = 180
+		self.up_time = 120
+	
+	def getIP(self):
+		hostname = socket.gethostname()
+		self.ip = socket.gethostbyname(hostname)
 
 	def cloud(self):
 		cloud_fog_Conn_thread=threading.Thread(target=self.connection_est)
@@ -65,7 +69,7 @@ class cloud_node:
 				try:
 					nodes.settimeout(0.5)
 					mesage=nodes.recv(1024).decode().split(":")
-					print("Message : {} >>>>>>>> Received from FOG : {}".format(mesage,nodes))
+					#print("Message : {} >>>>>>>> Received from FOG : {}".format(mesage,nodes))
 					n=7
 					mesage=[mesage[i*n:(i+1)*n] for i in range((len(mesage)+n-1)//n)]
 					for msg in mesage:
@@ -112,7 +116,8 @@ class cloud_node:
 
 if __name__=="__main__":
 	My_ip="127.0.0.1"
-	My_tcp=int(sys.argv[1])	
+	My_tcp=int(sys.argv[1])
 	cloud=cloud_node(My_ip,My_tcp)
+	cloud.getIP()
 	cloud.cloud()
 

@@ -15,7 +15,7 @@ class fog_node:
 		self.My_tcp = My_tcp
 		self.My_udp = my_udp
 		self.cloud_ip = C
-		self.cloud_port = Tcp0		
+		self.cloud_port = Tcp0
 		self.My_ip = "127.0.0.1"
 		self.recv_queue=[]
 		self.conn_state={}
@@ -28,7 +28,11 @@ class fog_node:
 		self.lock=threading.Lock()
 		self.cloud_node=[]
 		self.node_up_time = time.time()
-		self.up_time = 150
+		self.up_time = 100
+
+	def getIP(self):
+		hostname = socket.gethostname()
+		self.My_ip = socket.gethostbyname(hostname)
 
 	def conn_establish(self):
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -104,7 +108,7 @@ class fog_node:
 				print("Ending fog cloud end ")
 				break
 			
-			print("Cloud node buffer *****",self.cloud_Q)
+			#print("Cloud node buffer *****",self.cloud_Q)
 			if not self.cloud_Q:
 				time.sleep(1)
 				continue
@@ -209,7 +213,7 @@ class fog_node:
 				fog_node = self.best_Fog_node_selection(msg[1],hopped_nodes)
 				#print("Printing the output ===== {}\n".format(fog_node))
 				if fog_node:
-					print("Forwarding message to Fog : {}".format(msg,fog_node))
+					#print("Forwarding message to Fog : {}".format(msg,fog_node))
 					#print("Conn State is ===== {}\n".format(self.conn_state.get((fog_node[0],int(fog_node[1])))))
 					self.conn_state.get(fog_node).sendall(msg.encode())
 					print("sending the message : {} to best node {}\n".format(msg,fog_node))
@@ -301,7 +305,7 @@ class fog_node:
 							#print("Extracted message at FOG recv buffer ",data)
 							if(self.Q_Tym+int(msg[5])>self.Max_Res_Tym):
 								self.Frwd_Q.append((data,nodes))
-								print("Fog buffer full, sending to next FOG HOP ",data)
+								print("Fog buffer full, sending to next FOG HOP ",data,nodes)
 								continue
 							else:
 								self.Q_Tym+=int(msg[5])
@@ -322,5 +326,6 @@ if __name__=="__main__":
 	cloud_port = int(sys.argv[6])
 	N = list(zip(sys.argv[7::2],map(int,sys.argv[8::2])))
 	Fog = fog_node(My_tcp,My_udp,cloud_IP,cloud_port,N,Max_Res_Tym,t)
+	Fog.getIP()
 	Fog.conn_establish()
 		 

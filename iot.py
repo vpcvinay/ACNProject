@@ -7,7 +7,7 @@ class variables:
 		self.My_udp 	= My_udp
 		self.interval	= interval
 		self.ipaddr 	= "127.0.0.1"
-		self.max_msg	= 20
+		self.max_msg	= 10
 		self.s_send 	= socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		
 
@@ -32,7 +32,7 @@ def request_num_gen(self):
 
 def ip_addr(self):
 	hostname=socket.gethostname()
-	#self.ipaddr=socket.gethostbyname(hostname)
+	self.ipaddr=socket.gethostbyname(hostname)
 	
 def Send_comm(self):
 	req_num = request_num_gen(self)
@@ -76,4 +76,5 @@ if __name__=="__main__":
 	My_udp = int(sys.argv[2])
 	N = list(zip(sys.argv[3::2],map(int,sys.argv[4::2])))
 	var = variables(interval,My_udp,N)
+	ip_addr(var)
 	Iot_node(var)
