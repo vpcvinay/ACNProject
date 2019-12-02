@@ -124,6 +124,6 @@ if __name__=="__main__":
 	My_ip="127.0.0.1"
 	My_tcp=int(sys.argv[1])
 	cloud=cloud_node(My_ip,My_tcp)
-	#cloud.getIP()
+	cloud.getIP()
 	cloud.cloud()
 

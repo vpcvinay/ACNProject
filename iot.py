@@ -92,5 +92,5 @@ if __name__=="__main__":
 	My_udp = int(sys.argv[2])
 	N = list(zip(sys.argv[3::2],map(int,sys.argv[4::2])))
 	var = variables(interval,My_udp,N)
-	#ip_addr(var)
+	ip_addr(var)
 	Iot_node(var)

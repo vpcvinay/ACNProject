@@ -330,6 +330,6 @@ if __name__=="__main__":
 	cloud_port = int(sys.argv[6])
 	N = list(zip(sys.argv[7::2],map(int,sys.argv[8::2])))
 	Fog = fog_node(My_tcp,My_udp,cloud_IP,cloud_port,N,Max_Res_Tym,t)
-	#Fog.getIP()
+	Fog.getIP()
 	Fog.conn_establish()
 	
