@@ -45,7 +45,7 @@ class cloud_node:
 				self.lock.acquire()
 				self.incoming_ip.append(conn)
 				self.lock.release()
-				#print("Connection established")
+				print("Incoming Request from the FOG {} accepted and connected....".format(addr[0]))
 				#print("address and the port: {}".format(addr))
 				#print("Received *****",self.incoming_ip)
 	
@@ -56,7 +56,7 @@ class cloud_node:
 	def fog_Recv(self):
 		while True:
 			if((time.time()-self.node_up_time)>self.up_time):
-				print("ending fog recv thread ")
+				print("Fog Receive Thread Ended ")
 				break
 			
 			#print("Fog Receive Loop ------- \n")
@@ -67,9 +67,15 @@ class cloud_node:
 			for nodes in connections:
 				#print("IP ip ip ip ip ip ip ",connections)
 				try:
+					#print(nodes)
 					nodes.settimeout(0.5)
-					mesage=nodes.recv(1024).decode().split(":")
-					#print("Message : {} >>>>>>>> Received from FOG : {}".format(mesage,nodes))
+					mesage = nodes.recv(1024)
+					#print("Received MSG",mesage)
+					#print("decoded",mesage.decode().split(":"))
+					mesage = mesage.decode().split(":")
+					#print(mesage)
+					srv_fog = mesage[6].split(',')[-2]
+					print("IOT Message with Sequence ID {} Received from FOG : {}".format(mesage[3],srv_fog))
 					n=7
 					mesage=[mesage[i*n:(i+1)*n] for i in range((len(mesage)+n-1)//n)]
 					for msg in mesage:
@@ -100,7 +106,7 @@ class cloud_node:
 			self.lock.acquire()
 			msg=self.fog_recv_msg.pop(0).split(":")
 			self.lock.release()
-			print("Serving the message ",msg)
+			print("Serving the IOT Message with ID : {}..... ".format(msg[3]))
 			ip,port,Seq_No,Res_Tym = msg[0],int(msg[1]),msg[3],float(msg[5])
 			hopped_nodes = msg[6].split(',')
 			msg[6] = ','.join(hopped_nodes[:-1]+[';'+self.ip])
@@ -108,7 +114,7 @@ class cloud_node:
 			time.sleep(Res_Tym)
 			with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as iot_soc:
 				Message = ':'.join(["Cloud to Iot ",str(Seq_No),msg[6]])
-				print("Sending message to IOT ",Message)
+				print("Response Sent to IOT for packet : {}".format(Seq_No))
 				iot_soc.sendto(Message.encode(),(ip,port))
 			#time.sleep(0.3)
 			#print("Sent ========================================")
@@ -118,6 +124,6 @@ if __name__=="__main__":
 	My_ip="127.0.0.1"
 	My_tcp=int(sys.argv[1])
 	cloud=cloud_node(My_ip,My_tcp)
-	cloud.getIP()
+	#cloud.getIP()
 	cloud.cloud()
 
