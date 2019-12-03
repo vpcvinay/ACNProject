@@ -28,4 +28,4 @@ for running the cloud node
 
 for running the FOG node
 	$ python3 server.py Max_Response_Time t MY_TCP MY_UDP C TCP0 N1 TCP1 N2 TCP2 
-	$ python3 server.py 9 3 6000 "10.179.69.35" 6001 "10.179.69.36" 6002
+	$ python3 server.py 9 3 7000 6000 "10.179.69.34" 8000 "10.179.69.35" 7001 "10.179.69.36" 7002
