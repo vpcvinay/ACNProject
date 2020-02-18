@@ -1,7 +1,8 @@
-Python Version 
-	--- Python v3.5.2
+#### Python Version  
 
-TEAM:
+        --- Python v3.5.2
+
+#### TEAM:
 
 	--- Purna Chandra Vinay Kumar. Vemali
 		https://github.com/vpcvinay/
