@@ -6,11 +6,9 @@
 
 	--- Purna Chandra Vinay Kumar. Vemali
 		https://github.com/vpcvinay/
-		pxv171630@utdallas.edu
 
 	--- Bennaghatta Narayanaswamy Pooja.
 		https://github.com/PoojaGowda1617/
-		pxb180017@utdallas.edu
 		
 
 ### IMPLEMENTATION:
